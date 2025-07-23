@@ -1,0 +1,83 @@
+<!--index.html-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Ordenar imagenes</title>
+   <link rel="stylesheet" href="/css/estilos.css">
+</head>
+<body>
+   <section>
+       <div class="login-box">
+           <form id="processForm">
+               <h2 class="login-title">Organizador de imágenes</h2>
+               
+               <div class="input-box">
+                   <span class="icon" id="source-folder-icon"><ion-icon name="folder-outline"></ion-icon></span>
+                   <input type="text" id="origen" name="origen" required>
+                   <label for="source-folder-input">Carpeta de Origen</label>
+               </div>
+               <div class="input-box">
+                   <span class="icon" id="destination-folder-icon"><ion-icon name="folder-open-outline"></ion-icon></span>
+                   <input type="text" id="destino" name="destino" required>
+                   <label for="destination-folder-input">Carpeta de Destino</label>
+               </div>
+           
+               <button class="button-login" id="ejecutar" type="submit">Ejecutar</button>
+           </form>
+       </div>  
+   </section>
+   <div id="modalProgress" class="modal">
+        <div class="modal-content">
+            <h3>Procesando archivos...</h3>
+            <div class="progress-container">
+                <div class="progress-bar"></div>
+            </div>
+            <p id="progress-text">0%</p>
+            <button id="modal-accept" style="display: none;">Aceptar</button>
+        </div>
+    </div>   
+   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>   
+   <script>
+    document.getElementById('processForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const modal = document.getElementById('modalProgress');
+    const progressBar = modal.querySelector('.progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const acceptButton = document.getElementById('modal-accept');
+    modal.style.display = 'block';
+    acceptButton.style.display = 'none';
+    
+    const origen = document.getElementById('origen');
+    const destino = document.getElementById('destino');
+    
+    try {
+        const eventSource = new EventSource(`/progress?origen=${encodeURIComponent(origen.value)}&destino=${encodeURIComponent(destino.value)}`);
+        
+        eventSource.onmessage = function(event) {
+            const progress = JSON.parse(event.data);
+            progressBar.style.width = `${progress.percentage}%`;
+            progressText.textContent = `${progress.processed} de ${progress.total} archivos (${progress.percentage}%)`;
+            
+            if(progress.percentage === 100) {
+                eventSource.close();
+                acceptButton.style.display = 'block';
+            }
+        };
+        
+        acceptButton.onclick = function() {
+            modal.style.display = 'none';
+            origen.value = '';
+            destino.value = '';
+        };
+        
+    } catch (error) {
+        modal.style.display = 'none';
+        alert('Error en el procesamiento');
+    }
+});
+   </script>
+</body>
+</html>
