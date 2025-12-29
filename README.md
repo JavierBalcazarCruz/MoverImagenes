@@ -180,5 +180,4 @@ El servidor muestra información detallada en la consola:
 MIT
 
 ## Autor
-
-Desarrollado con mejoras estratosféricas por Claude Code
+Javier Balcazar Cruz
