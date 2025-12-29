@@ -4,80 +4,436 @@
 <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   <title>Ordenar imagenes</title>
+   <title>Ordenar imágenes y videos</title>
    <link rel="stylesheet" href="/css/estilos.css">
+   <style>
+       .options-container {
+           margin: 20px 0;
+           display: flex;
+           flex-direction: column;
+           gap: 10px;
+       }
+
+       .option-row {
+           display: flex;
+           align-items: center;
+           gap: 10px;
+           font-size: 14px;
+       }
+
+       .option-row input[type="checkbox"] {
+           width: 18px;
+           height: 18px;
+           cursor: pointer;
+       }
+
+       .option-row label {
+           cursor: pointer;
+           user-select: none;
+           margin: 0;
+           position: static;
+           transform: none;
+           font-size: 14px;
+       }
+
+       .modal-content {
+           max-width: 800px;
+           width: 90%;
+           max-height: 90vh;
+           overflow-y: auto;
+       }
+
+       .stats-container {
+           display: grid;
+           grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+           gap: 15px;
+           margin: 20px 0;
+       }
+
+       .stat-box {
+           background: rgba(255, 255, 255, 0.1);
+           padding: 15px;
+           border-radius: 8px;
+           text-align: center;
+       }
+
+       .stat-number {
+           font-size: 24px;
+           font-weight: bold;
+           color: #fff;
+           margin-bottom: 5px;
+       }
+
+       .stat-label {
+           font-size: 12px;
+           color: rgba(255, 255, 255, 0.7);
+           text-transform: uppercase;
+       }
+
+       .current-file {
+           margin: 15px 0;
+           padding: 10px;
+           background: rgba(255, 255, 255, 0.1);
+           border-radius: 5px;
+           font-size: 12px;
+           word-break: break-all;
+       }
+
+       .logs-container {
+           margin: 20px 0;
+           max-height: 300px;
+           overflow-y: auto;
+           background: rgba(0, 0, 0, 0.3);
+           border-radius: 5px;
+           padding: 10px;
+       }
+
+       .log-section {
+           margin-bottom: 20px;
+       }
+
+       .log-section h4 {
+           margin: 0 0 10px 0;
+           font-size: 14px;
+           color: #fff;
+       }
+
+       .log-item {
+           font-size: 11px;
+           padding: 5px;
+           margin: 3px 0;
+           border-radius: 3px;
+           background: rgba(255, 255, 255, 0.05);
+       }
+
+       .log-error {
+           background: rgba(255, 100, 100, 0.2);
+           border-left: 3px solid #ff6464;
+       }
+
+       .log-success {
+           background: rgba(100, 255, 100, 0.2);
+           border-left: 3px solid #64ff64;
+       }
+
+       .log-warning {
+           background: rgba(255, 200, 100, 0.2);
+           border-left: 3px solid #ffc864;
+       }
+
+       .collapsible {
+           cursor: pointer;
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+       }
+
+       .collapsible::after {
+           content: '▼';
+           font-size: 10px;
+       }
+
+       .collapsible.collapsed::after {
+           content: '▶';
+       }
+
+       .collapsible-content {
+           max-height: 200px;
+           overflow-y: auto;
+       }
+
+       .collapsible-content.hidden {
+           display: none;
+       }
+
+       .dry-run-badge {
+           display: inline-block;
+           background: #ffc864;
+           color: #000;
+           padding: 5px 10px;
+           border-radius: 3px;
+           font-size: 12px;
+           font-weight: bold;
+           margin-bottom: 10px;
+       }
+
+       .button-login:disabled {
+           opacity: 0.5;
+           cursor: not-allowed;
+       }
+
+       .info-text {
+           font-size: 12px;
+           color: rgba(255, 255, 255, 0.6);
+           margin-top: 5px;
+           font-style: italic;
+       }
+   </style>
 </head>
 <body>
    <section>
        <div class="login-box">
            <form id="processForm">
-               <h2 class="login-title">Organizador de imágenes</h2>
-               
+               <h2 class="login-title">Organizador de Imágenes y Videos</h2>
+
                <div class="input-box">
                    <span class="icon" id="source-folder-icon"><ion-icon name="folder-outline"></ion-icon></span>
                    <input type="text" id="origen" name="origen" required>
-                   <label for="source-folder-input">Carpeta de Origen</label>
+                   <label for="origen">Carpeta de Origen</label>
                </div>
                <div class="input-box">
                    <span class="icon" id="destination-folder-icon"><ion-icon name="folder-open-outline"></ion-icon></span>
                    <input type="text" id="destino" name="destino" required>
-                   <label for="destination-folder-input">Carpeta de Destino</label>
+                   <label for="destino">Carpeta de Destino</label>
                </div>
-           
+
+               <div class="options-container">
+                   <div class="option-row">
+                       <input type="checkbox" id="dryRun" name="dryRun">
+                       <label for="dryRun">Modo Prueba (no mover archivos, solo simular)</label>
+                   </div>
+                   <div class="option-row">
+                       <input type="checkbox" id="deleteAAE" name="deleteAAE" checked>
+                       <label for="deleteAAE">Eliminar archivos AAE de Apple</label>
+                   </div>
+               </div>
+               <p class="info-text">Soporta 30+ formatos de imagen y 20+ formatos de video</p>
+
                <button class="button-login" id="ejecutar" type="submit">Ejecutar</button>
            </form>
-       </div>  
+       </div>
    </section>
+
    <div id="modalProgress" class="modal">
         <div class="modal-content">
-            <h3>Procesando archivos...</h3>
+            <div id="dryRunBadge" style="display: none;">
+                <span class="dry-run-badge">MODO PRUEBA - No se moverán archivos</span>
+            </div>
+
+            <h3 id="modal-title">Procesando archivos...</h3>
+
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-number" id="stat-processed">0</div>
+                    <div class="stat-label">Procesados</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="stat-total">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="stat-errors">0</div>
+                    <div class="stat-label">Errores</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="stat-skipped">0</div>
+                    <div class="stat-label">Omitidos</div>
+                </div>
+            </div>
+
             <div class="progress-container">
                 <div class="progress-bar"></div>
             </div>
             <p id="progress-text">0%</p>
+
+            <div id="current-file-container" class="current-file" style="display: none;">
+                Procesando: <span id="current-file-name"></span>
+            </div>
+
+            <div class="logs-container" id="logs-container" style="display: none;">
+                <!-- Errores -->
+                <div class="log-section" id="errors-section" style="display: none;">
+                    <h4 class="collapsible" data-target="errors-list">
+                        Errores (<span id="errors-count">0</span>)
+                    </h4>
+                    <div id="errors-list" class="collapsible-content"></div>
+                </div>
+
+                <!-- Archivos procesados -->
+                <div class="log-section" id="processed-section" style="display: none;">
+                    <h4 class="collapsible collapsed" data-target="processed-list">
+                        Archivos Procesados (<span id="processed-count">0</span>)
+                    </h4>
+                    <div id="processed-list" class="collapsible-content hidden"></div>
+                </div>
+
+                <!-- Archivos omitidos -->
+                <div class="log-section" id="skipped-section" style="display: none;">
+                    <h4 class="collapsible collapsed" data-target="skipped-list">
+                        Archivos Omitidos (<span id="skipped-count">0</span>)
+                    </h4>
+                    <div id="skipped-list" class="collapsible-content hidden"></div>
+                </div>
+            </div>
+
             <button id="modal-accept" style="display: none;">Aceptar</button>
         </div>
-    </div>   
+    </div>
+
    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>   
+   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
    <script>
-    document.getElementById('processForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const modal = document.getElementById('modalProgress');
-    const progressBar = modal.querySelector('.progress-bar');
-    const progressText = document.getElementById('progress-text');
-    const acceptButton = document.getElementById('modal-accept');
-    modal.style.display = 'block';
-    acceptButton.style.display = 'none';
-    
-    const origen = document.getElementById('origen');
-    const destino = document.getElementById('destino');
-    
-    try {
-        const eventSource = new EventSource(`/progress?origen=${encodeURIComponent(origen.value)}&destino=${encodeURIComponent(destino.value)}`);
-        
-        eventSource.onmessage = function(event) {
-            const progress = JSON.parse(event.data);
-            progressBar.style.width = `${progress.percentage}%`;
-            progressText.textContent = `${progress.processed} de ${progress.total} archivos (${progress.percentage}%)`;
-            
-            if(progress.percentage === 100) {
-                eventSource.close();
-                acceptButton.style.display = 'block';
+    // Toggle collapsible sections
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('collapsible')) {
+            const target = document.getElementById(e.target.dataset.target);
+            if (target) {
+                target.classList.toggle('hidden');
+                e.target.classList.toggle('collapsed');
             }
-        };
-        
-        acceptButton.onclick = function() {
+        }
+    });
+
+    document.getElementById('processForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const modal = document.getElementById('modalProgress');
+        const progressBar = modal.querySelector('.progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const acceptButton = document.getElementById('modal-accept');
+        const modalTitle = document.getElementById('modal-title');
+        const dryRunBadge = document.getElementById('dryRunBadge');
+        const currentFileContainer = document.getElementById('current-file-container');
+        const currentFileName = document.getElementById('current-file-name');
+        const logsContainer = document.getElementById('logs-container');
+
+        const origen = document.getElementById('origen').value;
+        const destino = document.getElementById('destino').value;
+        const dryRun = document.getElementById('dryRun').checked;
+        const deleteAAE = document.getElementById('deleteAAE').checked;
+
+        // Reset UI
+        modal.style.display = 'block';
+        acceptButton.style.display = 'none';
+        modalTitle.textContent = 'Procesando archivos...';
+        logsContainer.style.display = 'none';
+        currentFileContainer.style.display = 'none';
+        dryRunBadge.style.display = dryRun ? 'block' : 'none';
+
+        document.getElementById('stat-processed').textContent = '0';
+        document.getElementById('stat-total').textContent = '0';
+        document.getElementById('stat-errors').textContent = '0';
+        document.getElementById('stat-skipped').textContent = '0';
+        document.getElementById('errors-list').innerHTML = '';
+        document.getElementById('processed-list').innerHTML = '';
+        document.getElementById('skipped-list').innerHTML = '';
+        document.getElementById('errors-section').style.display = 'none';
+        document.getElementById('processed-section').style.display = 'none';
+        document.getElementById('skipped-section').style.display = 'none';
+
+        try {
+            const url = `/progress?origen=${encodeURIComponent(origen)}&destino=${encodeURIComponent(destino)}&dryRun=${dryRun}&deleteAAE=${deleteAAE}`;
+            const eventSource = new EventSource(url);
+
+            eventSource.onmessage = function(event) {
+                const progress = JSON.parse(event.data);
+
+                // Handle errors
+                if (progress.error) {
+                    modalTitle.textContent = 'Error durante el procesamiento';
+                    progressText.textContent = progress.message;
+                    acceptButton.style.display = 'block';
+                    eventSource.close();
+                    return;
+                }
+
+                // Update progress bar
+                progressBar.style.width = `${progress.percentage}%`;
+                progressText.textContent = `${progress.processed} de ${progress.total} archivos (${progress.percentage}%)`;
+
+                // Update stats
+                document.getElementById('stat-processed').textContent = progress.processed;
+                document.getElementById('stat-total').textContent = progress.total;
+                document.getElementById('stat-errors').textContent = progress.errors?.length || 0;
+                document.getElementById('stat-skipped').textContent = progress.skippedFiles?.length || 0;
+
+                // Show current file
+                if (progress.currentFile) {
+                    currentFileContainer.style.display = 'block';
+                    currentFileName.textContent = progress.currentFile;
+                } else {
+                    currentFileContainer.style.display = 'none';
+                }
+
+                // Show logs
+                if (progress.errors?.length > 0 || progress.processedFiles?.length > 0 || progress.skippedFiles?.length > 0) {
+                    logsContainer.style.display = 'block';
+
+                    // Update errors
+                    if (progress.errors?.length > 0) {
+                        document.getElementById('errors-section').style.display = 'block';
+                        document.getElementById('errors-count').textContent = progress.errors.length;
+                        const errorsList = document.getElementById('errors-list');
+                        errorsList.innerHTML = progress.errors.map(err =>
+                            `<div class="log-item log-error"><strong>${err.file}</strong>: ${err.error}</div>`
+                        ).join('');
+                    }
+
+                    // Update processed files
+                    if (progress.processedFiles?.length > 0) {
+                        document.getElementById('processed-section').style.display = 'block';
+                        document.getElementById('processed-count').textContent = progress.processedFiles.length;
+                        const processedList = document.getElementById('processed-list');
+                        processedList.innerHTML = progress.processedFiles.map(item => {
+                            if (item.action === 'deleted') {
+                                return `<div class="log-item log-warning">${item.file} - Eliminado (${item.type})</div>`;
+                            }
+                            return `<div class="log-item log-success">${item.file} → ${item.year}/${item.month} (${item.type}, ${item.dateField})</div>`;
+                        }).join('');
+                    }
+
+                    // Update skipped files
+                    if (progress.skippedFiles?.length > 0) {
+                        document.getElementById('skipped-section').style.display = 'block';
+                        document.getElementById('skipped-count').textContent = progress.skippedFiles.length;
+                        const skippedList = document.getElementById('skipped-list');
+                        skippedList.innerHTML = progress.skippedFiles.map(item =>
+                            `<div class="log-item log-warning">${item.file}: ${item.reason}</div>`
+                        ).join('');
+                    }
+                }
+
+                // Check if completed
+                if (progress.completed) {
+                    const hasErrors = progress.errors?.length > 0;
+                    const errorCount = progress.errors?.length || 0;
+                    const successCount = (progress.processedFiles?.length || 0) - errorCount;
+
+                    if (dryRun) {
+                        modalTitle.textContent = 'Vista previa completada';
+                    } else if (hasErrors) {
+                        modalTitle.textContent = `Completado con ${errorCount} error${errorCount > 1 ? 'es' : ''}`;
+                    } else {
+                        modalTitle.textContent = `¡Completado exitosamente! ${successCount} archivo${successCount !== 1 ? 's' : ''} organizado${successCount !== 1 ? 's' : ''}`;
+                    }
+
+                    currentFileContainer.style.display = 'none';
+                    eventSource.close();
+                    acceptButton.style.display = 'block';
+                }
+            };
+
+            eventSource.onerror = function(error) {
+                console.error('Error en EventSource:', error);
+                modalTitle.textContent = 'Error de conexión';
+                progressText.textContent = 'Se perdió la conexión con el servidor';
+                acceptButton.style.display = 'block';
+                eventSource.close();
+            };
+
+            acceptButton.onclick = function() {
+                modal.style.display = 'none';
+                if (!dryRun) {
+                    document.getElementById('origen').value = '';
+                    document.getElementById('destino').value = '';
+                }
+            };
+
+        } catch (error) {
             modal.style.display = 'none';
-            origen.value = '';
-            destino.value = '';
-        };
-        
-    } catch (error) {
-        modal.style.display = 'none';
-        alert('Error en el procesamiento');
-    }
-});
+            alert('Error en el procesamiento: ' + error.message);
+        }
+    });
    </script>
 </body>
 </html>
